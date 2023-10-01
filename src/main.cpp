@@ -1,11 +1,13 @@
+//*https://strawberry-linux.com/support/57090/1473735
 #include <M5Stack.h>
 
 #define CK 5
-#define MI 17;   //マスター入力
-#define MO 16;   //マスター出力
-#define SS 22;   //スレーブセレクト
-#define HSPI_CLK 1000000;   //clk 1MHz
-SPIClass hspi(HSPI);   //SPI通信を行うためのSPIClassオブジェクトを作成
+#define MI 17             // マスター入力
+#define MO 16             // マスター出力
+#define SS 22             // スレーブセレクト
+#define HSPI_CLK 1000000  // clk 1MHz
+unsigned long int Output_freq = 10000000;
+SPIClass hspi(HSPI);  // SPI通信を行うためのSPIClassオブジェクトを作成
 
 /*各種 spi設定
 HSPI_CLK      クロック速度を指定
@@ -29,28 +31,24 @@ SPI_MODE0は、SPI通信のモードを指定するためのパラメータで�
 このモードでは、データのサンプリングはクロックの立ち上がりで行われます。
 */
 
-SPISettings spiSettings = SPISettings(HSPI_CLK,SPI_MSBFIRST,SPI_MODE0);
+SPISettings spiSettings = SPISettings(HSPI_CLK, SPI_MSBFIRST, SPI_MODE1);
 
 void setup() {
-  M5.begin();   //M5初期化
+  M5.begin();  // M5初期化
 
-  pinMode(CK,OUTPUT);
-  pinMode(MI,INPUT);
-  pinMode(MO,OUTPUT);
-  pinMode(SS,OUTPUT);
+  pinMode(CK, OUTPUT);
+  pinMode(MI, INPUT);
+  pinMode(MO, OUTPUT);
+  pinMode(SS, OUTPUT);
 
-  hspi.begin(CK,MI,MO,SS);
-}
-int mcp3204(int ch){      //SPI通信の開始を宣言
-  int highByte,lowByte;   //スレーブセレクトピンをLOW
+  hspi.begin(CK, MI, MO, SS);
 
-  hspi.beginTransaction(spiSettings); //指定されたチャンネルのデータをMCP3204に送信し、高位バイトを受信しています。
-  digitalWrite(SS,LOW);                //指定されたチャンネルのデータをMCP3204に送信し、低位バイトを受信しています。
-  highByte = hspi.transfer(0x06|(ch>>2));  //ダミーデータを送信して低位バイトを受信しています
-  highByte = hspi.transfer(ch<<6);    // スレーブセレクトピンをHIGHに設定して通信を終了
-  lowByte = hspi.transfer(0x00);      //受信したデータを16ビットの値に変換して返しています。高位バイトの下位4ビットと低位バイトを結合しています。
-  digitalWrite(SS,HIGH);
+  unsigned long int d = Output_freq * 4;
+  hspi.beginTransaction(spiSettings);
+  hspi.transfer32(0x2020);
+  hspi.transfer32(0x4000 | (d & 0x3fff));
+  hspi.transfer32(0x4000 | (d >> 14));
   hspi.endTransaction();
-
-  return (highByte&0x0F)*256+lowByte;
 }
+
+void loop() {}

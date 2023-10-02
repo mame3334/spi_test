@@ -2,11 +2,11 @@
 #include <M5Stack.h>
 
 #define CK 5
-#define MI 17             // マスター入力
-#define MO 16             // マスター出力
-#define SS 22             // スレーブセレクト
-#define HSPI_CLK 1000000  // clk 1MHz
-unsigned long int Output_freq = 10000000;
+#define MI 17           // マスター入力
+#define MO 16           // マスター出力
+#define SS 22           // スレーブセレクト
+#define HSPI_CLK 20000  // clk 20kHz
+unsigned long int Output_freq = 100000;
 SPIClass hspi(HSPI);  // SPI通信を行うためのSPIClassオブジェクトを作成
 
 /*各種 spi設定
@@ -35,6 +35,10 @@ SPISettings spiSettings = SPISettings(HSPI_CLK, SPI_MSBFIRST, SPI_MODE1);
 
 void setup() {
   M5.begin();  // M5初期化
+  Serial.begin(9600);
+  Serial.print(HSPI_CLK);
+  Serial.print("\n");
+  Serial.print(Output_freq);
 
   pinMode(CK, OUTPUT);
   pinMode(MI, INPUT);
@@ -44,10 +48,12 @@ void setup() {
   hspi.begin(CK, MI, MO, SS);
 
   unsigned long int d = Output_freq * 4;
+  Serial.print("\n");
+  Serial.print(d);
   hspi.beginTransaction(spiSettings);
-  hspi.transfer32(0x2020);
-  hspi.transfer32(0x4000 | (d & 0x3fff));
-  hspi.transfer32(0x4000 | (d >> 14));
+  hspi.transfer16(0b0010000000100000);
+  hspi.transfer16(0b0100000000000000 | (d & 0x3fff));
+  hspi.transfer16(0b0100000000000000 | (d >> 14));
   hspi.endTransaction();
 }
 
